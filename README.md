@@ -60,3 +60,7 @@ For a step-by-step guide on how to assess ME-ICA results in more detail, click [
 #Reasons for Fork
 
 The edits to the me-ica algorithm are entirely confined to the file select_model.py file.  The decision criteria in the original me-ica tended to label our task component as non-BOLD because it had high variance.  The first change was commenting out a rejection criterion, which kept rejecting our task component.  However, our Task component was sometimes moved into MIDK and so we went and made a couple more changes.  The Rho elbow was edited to be more lenient, the highest Kappa component is more likely to be kept in the good training set, and the variance explained and the normalized variance are switched.  The switching of the variance explained and the normalized variance is done lazily and so what me-ica outputs as variance explained is actually the normalized variance explained and vice versa.  There are more changes to the code, but these changes output text files in the TED directory with the variables that are used in select_model.py allowing one to look more closely at what is occurring in the decision criteria.  The file selcomp.py can be run to see how the original code and this version differ.
+
+#Other files
+
+Check out [here](https://github.com/BenGutierrez/Meica_Report) for a Report form for your me-ica output!
