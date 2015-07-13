@@ -123,6 +123,16 @@ def fitmodels_direct(catd,mmix,mask,t2s,tes,fout=None,reindex=False,mmixN=None,f
 		Rhos[i] = np.average(F_S0,weights=np.abs(wtsZ)**2.)
 
 	#Tabulate component values
+	###########################################
+	###########################################
+	# swap variance explained with variance explained normalized.  This was done after noticing that the task component that was being removed
+	# tended to have a lower varex_norm than varex
+	_varex_norm = varex_norm
+	_varex = varex
+	varex = _varex_norm
+	varex_norm = _varex
+	###########################################
+	###########################################
 	comptab_pre = np.vstack([np.arange(nc),Kappas,Rhos,varex,varex_norm]).T
 	if reindex:
 		#Re-index all components in Kappa order
@@ -176,7 +186,7 @@ def fitmodels_direct(catd,mmix,mask,t2s,tes,fout=None,reindex=False,mmixN=None,f
 			Br_clmaps_S0[:,i] = spatclust(rankvec(tsoc_Babs[:,i]),mask,csize,max(tsoc_Babs.shape)-countsigFS0,head,aff)
 
 		seldict = {}
-		selvars = ['Kappas','Rhos','WTS','varex','Z_maps','F_R2_maps','F_S0_maps',\
+		selvars = ['Kappas','Rhos','WTS','varex','varex_norm','Z_maps','F_R2_maps','F_S0_maps',\
 			'Z_clmaps','F_R2_clmaps','F_S0_clmaps','tsoc_B','Br_clmaps_R2','Br_clmaps_S0']
 		for vv in selvars:
 			seldict[vv] = eval(vv)
@@ -187,7 +197,7 @@ def fitmodels_direct(catd,mmix,mask,t2s,tes,fout=None,reindex=False,mmixN=None,f
 			import zlib
 			try: os.system('mkdir compsel.debug')
 			except: pass
-			selvars = ['Kappas','Rhos','WTS','varex','Z_maps','Z_clmaps','F_R2_clmaps','F_S0_clmaps','Br_clmaps_R2','Br_clmaps_S0']
+			selvars = ['Kappas','Rhos','WTS','varex','varex_norm','Z_maps','Z_clmaps','F_R2_clmaps','F_S0_clmaps','Br_clmaps_R2','Br_clmaps_S0']
 			for vv in selvars:
 				with open('compsel.debug/%s.pkl.gz' % vv,'wb') as ofh:
 					print "Writing debug output: compsel.debug/%s.pkl.gz" % vv
@@ -203,7 +213,8 @@ def selcomps(seldict,debug=False,olevel=2,oversion=99,knobargs=''):
 
 	#Dump dictionary into variable names
 	for key in seldict.keys(): exec("%s=seldict['%s']" % (key,key))
-
+	###########################################
+	###########################################
 	#List of components
 	midk = []
 	ign = []
@@ -279,9 +290,39 @@ def selcomps(seldict,debug=False,olevel=2,oversion=99,knobargs=''):
 	"""
 	rej = ncl[andb([Rhos>Kappas,countsigFS0>countsigFR2])>0]
 	rej = np.union1d(rej,ncl[andb([dice_table[:,1]>dice_table[:,0],varex>np.median(varex)])==2])
-	rej = np.union1d(rej,ncl[andb([tt_table[ncl,0]<0,varex[ncl]>np.median(varex)])==2])
+	###########################################
+	###########################################
+	#removed following component selection criteria.  would remove high variance high kappa compnents sometimes if their rho was wasa little to high
+	#rej = np.union1d(rej,ncl[andb([tt_table[ncl,0]<0,varex[ncl]>np.median(varex)])==2])
+	###########################################
+	###########################################
 	ncl = np.setdiff1d(ncl,rej)
 	varex_ub_p = np.median(varex[Kappas>Kappas[getelbow(Kappas)]])
+
+	
+	###########################################
+	###########################################
+	#creates small txt file called rejected_compionents.txt in TED letting you know which components would have been removed from the rejection steps above in file rejected_componets.txt
+	components_rej = [[],[],[],]
+	for i in nc:
+		if andb([Rhos[i]>Kappas[i],countsigFS0[i]>countsigFR2[i]])>0:
+			components_rej[0].append(i)
+		if andb([dice_table[i,1]>dice_table[i,0],varex[i]>np.median(varex)])==2:
+			components_rej[1].append(i)
+		if andb([tt_table[i,0]<0,varex[i]>np.median(varex)])==2:
+			components_rej[2].append(i)
+	sl = []
+	sl.append("Components tht are rejected are rejected at the following steps. components are repeated even if excluded at previous step.")
+	sl.append("step 1: ncl[andb([Rhos>Kappas,countsigFS0>countsigFR2])>0] %s" % components_rej[0])
+	sl.append("step 2: np.union1d(rej,ncl[andb([dice_table[:,1]>dice_table[:,0],varex>np.median(varex)])==2]) %s" % components_rej[1])
+	sl.append("step 3: np.union1d(rej,ncl[andb([tt_table[ncl,0]<0,varex[ncl]>np.median(varex)])==2]) %s" % components_rej[2])
+	sl.append("difference between 3 and 2 union 1 %s" % np.setdiff1d(components_rej[2],np.union1d(components_rej[0],components_rej[1])))
+	ofh = open('rejected_components.txt','w')
+	ofh.write("\n".join(sl)+"\n")
+	ofh.close()
+	###########################################
+	###########################################
+
 
 	"""
 	Step 2: Make a  guess for what the good components are, in order to estimate good component properties
@@ -293,13 +334,21 @@ def selcomps(seldict,debug=False,olevel=2,oversion=99,knobargs=''):
 	f. Estimate a low and high variance
 	"""
 	ncls = ncl.copy()
-	for nn in range(3): ncls = ncls[1:][(varex[ncls][1:]-varex[ncls][:-1])<varex_ub_p] #Step 2a
+	###########################################
+	###########################################
+	# edited this section to be more lenient in accepting components as "good" 
+	for nn in range(3): ncls = np.union1d(ncls[1:][(varex[ncls][1:]-varex[ncls][:-1])<varex_ub_p],[ncls[0]]) #Step 2a, made this line automatically remove the highest kappa components 
 	Kappas_lim = Kappas[Kappas<getfbounds(ne)[-1]]
 	Rhos_lim = np.array(sorted(Rhos[ncls])[::-1])
 	Rhos_sorted = np.array(sorted(Rhos)[::-1])
 	Kappas_elbow = min(Kappas_lim[getelbow(Kappas_lim)],Kappas[getelbow(Kappas)])
-	Rhos_elbow = np.mean([Rhos_lim[getelbow(Rhos_lim)]  , Rhos_sorted[getelbow(Rhos_sorted)], getfbounds(ne)[0]])
+	# Rhos_elbow = np.mean([Rhos_lim[getelbow(Rhos_lim)]  , Rhos_sorted[getelbow(Rhos_sorted)], getfbounds(ne)[0]])#replaced these lines with the two below
+	Rhos_elbow = Rhos_sorted[getelbow(Rhos_sorted)] - Rhos_sorted[getelbow(Rhos_sorted)]*0.05 # Use a more lenient elbow metric
 	good_guess = ncls[andb([Kappas[ncls]>=Kappas_elbow, Rhos[ncls]<Rhos_elbow])==2]
+	###########################################
+	###########################################
+	#End Ben Gutierrez edits
+	
 	if debug:
 		import ipdb
 		ipdb.set_trace()
@@ -364,4 +413,3 @@ def selcomps(seldict,debug=False,olevel=2,oversion=99,knobargs=''):
 		ipdb.set_trace()
 
 	return list(sorted(ncl)),list(sorted(rej)),list(sorted(midk)),list(sorted(ign))
-
