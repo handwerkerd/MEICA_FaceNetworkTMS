@@ -63,4 +63,4 @@ The edits to the me-ica algorithm are entirely confined to the file select_model
 
 #Other files
 
-Check out [here](https://github.com/BenGutierrez/Meica_Report) for a Report form for your me-ica output!
+Click [here](https://github.com/BenGutierrez/Meica_Report) for a script to generate a html report form for your me-ica output!
