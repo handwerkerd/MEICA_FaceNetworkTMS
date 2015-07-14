@@ -208,12 +208,15 @@ def fitmodels_direct(catd,mmix,mask,t2s,tes,fout=None,reindex=False,mmixN=None,f
 
 
 def selcomps(seldict,debug=False,olevel=2,oversion=99,knobargs=''):
-
 	#import ipdb
 
 	#Dump dictionary into variable names
-	for key in seldict.keys(): exec("%s=seldict['%s']" % (key,key))
+	for key in seldict.keys(): 
+		exec("%s=seldict['%s']" % (key,key))
+		exec("np.savetxt('%s.txt',%s)" % (key,key))
 	###########################################
+
+		
 	###########################################
 	#List of components
 	midk = []
