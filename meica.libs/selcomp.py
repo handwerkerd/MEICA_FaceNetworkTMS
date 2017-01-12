@@ -207,7 +207,7 @@ if __name__ == '__main__':
 	parser = argparse.ArgumentParser('Options')
 	parser.add_argument('-path', dest = 'path', help = 'Path to meica.libs used')
 	parser.add_argument('-echoes', dest = 'ne', help = 'number of echoes', default ='3',type = int)
-	parser.add_argument('-orig', dest = 'orig',  help = 'Original component selection', action = 'store_true')
+	parser.add_argument('-orig', dest = 'orig',  help = 'Flag to use Prantik original component selection criteria', action = 'store_true')
 	parser.add_argument('-var', dest = 'var',  help = 'swap variance and variance explained.  A reminder that the edited version of me-ica'
 		+ ' does this automatically, so this is for seeing how the variance and variance explained effect component selection.', action = 'store_true')
 	args = parser.parse_args()
