@@ -198,10 +198,10 @@ def selcomps(seldict,orig,ne,var,debug=False,olevel=2,oversion=99,knobargs=''):
 		import ipdb
 		ipdb.set_trace()
 
-	print 'accepted components %s' % list(sorted(ncl))
-	print 'rejected components %s' % list(sorted(rej))
-	print 'midk components %s' % list(sorted([int(x) for x in midk]))#converting midk to int for asthetic reasons
-	print 'ign components %s' % list(sorted(ign))
+	print('accepted components %s' % list(sorted(ncl)))
+	print('rejected components %s' % list(sorted(rej)))
+	print('midk components %s' % list(sorted([int(x) for x in midk])))#converting midk to int for asthetic reasons
+	print('ign components %s' % list(sorted(ign)))
 	
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser('Options')
